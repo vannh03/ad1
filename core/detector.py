@@ -19,7 +19,7 @@ def detector_tracker_process(weights, imgsz, conf_thres, iou_thres,
     device_t = select_device(device)
     model_weight = str(weights[0]) if weights else str(MODEL_DETECTION_PATH)
     yolo_model = YOLO(model_weight)
-    names = yolo_model.model.names
+    names = yolo_model.names if hasattr(yolo_model, 'names') and yolo_model.names else getattr(yolo_model.model, 'names', {})
     tracker_args = BYTETrackerArgs()
     tracker = BYTETracker(
         track_thresh=tracker_args.track_thresh,

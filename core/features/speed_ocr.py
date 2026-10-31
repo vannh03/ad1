@@ -1,9 +1,12 @@
 import re
 import cv2
-from rapidocr_onnxruntime import RapidOCR
-ocr_engine = RapidOCR()
+try:
+    from rapidocr_onnxruntime import RapidOCR
+    ocr_engine = RapidOCR()
+except Exception:
+    ocr_engine = None
 
-_last_speed = 0 
+_last_speed = 30
 _MU = 0.8       # Hệ số ma sát mặt đường
 _G = 9.8        # Gia tốc trọng trường (m/s^2)
 
@@ -21,6 +24,8 @@ def extract_speed(text):
     return None
 
 def get_speed(frame):
+    if ocr_engine is None:
+        return _last_speed
     h, w = frame.shape[:2]
     if h == 1920 and w == 2560:
         roi = frame[1800:1918, 1480:1800]
