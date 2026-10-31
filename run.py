@@ -4,7 +4,7 @@
 Script chạy ADAS một lệnh duy nhất (One-Click) dành cho Jetson Nano.
 Người dùng chỉ cần gõ:
     python3 run.py
-Hệ thống sẽ tự động cấu hình và đo đạc FPS & Latency trung bình.
+Hệ thống sẽ tự động nạp cấu hình từ file .env và đo đạc FPS & Latency trung bình.
 """
 import os
 import sys
@@ -21,28 +21,79 @@ if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
 import torch
-from configs.settings import MODEL_DETECTION_PATH, PROJECT_ROOT
+from configs.settings import (
+    ENV_FILE_PATH,
+    ENV_LOADED,
+    DEFAULT_VIDEO_SOURCE,
+    DEFAULT_WEIGHTS,
+    DEFAULT_IMGSZ,
+    DEFAULT_DEVICE,
+    DEFAULT_MAX_FRAMES,
+    DEFAULT_WARMUP_FRAMES,
+    DEFAULT_CONF_THRES,
+    DEFAULT_IOU_THRES,
+)
 from core import (
     video_reader_process,
     detector_tracker_process,
     feature_mlp_rule_process
 )
 
+
+def resolve_video_source(root_dir: Path, configured_source: str) -> str:
+    """Tìm nguồn video hợp lệ dựa trên cấu hình .env hoặc tự động dò tìm."""
+    if configured_source and configured_source != "auto":
+        if configured_source.isdigit():
+            return configured_source
+        cand_path = Path(configured_source)
+        if cand_path.is_absolute() and cand_path.exists():
+            return str(cand_path)
+        rel_path = root_dir / configured_source
+        if rel_path.exists():
+            return str(rel_path)
+
+    # Tự động tìm video mẫu trong thư mục gốc hoặc runs/mlp_dataset_videos
+    default_mp4 = root_dir / "NO20250604-063730-010007F.MP4"
+    if default_mp4.exists():
+        return str(default_mp4)
+
+    root_videos = sorted(list(root_dir.glob("*.MP4")) + list(root_dir.glob("*.mp4")))
+    if root_videos:
+        return str(root_videos[0])
+
+    sample_dir = root_dir / "runs" / "mlp_dataset_videos"
+    if sample_dir.exists():
+        sample_videos = sorted(list(sample_dir.glob("*.mp4")) + list(sample_dir.glob("*.MP4")))
+        if sample_videos:
+            return str(sample_videos[0])
+
+    return "0"  # Camera mặc định
+
+
 def main():
     print("=" * 65)
     print("🚗 HỆ THỐNG CẢNH BÁO VA CHẠM THÔNG MINH (ADAS) - JETSON NANO")
     print("=" * 65)
 
-    # 1. Tự động kiểm tra phần cứng (GPU hay CPU)
+    env_status = f"Đã nạp ({ENV_FILE_PATH.name})" if ENV_LOADED else "Mặc định (Không tìm thấy .env)"
+    print(f" • Cấu hình (.env)    : {env_status}")
+
+    # 1. Tự động kiểm tra phần cứng (GPU hay CPU) dựa trên .env
     has_cuda = torch.cuda.is_available()
-    device = "0" if has_cuda else "cpu"
-    device_name = torch.cuda.get_device_name(0) if has_cuda else "CPU"
+    if DEFAULT_DEVICE.lower() == "auto":
+        device = "0" if has_cuda else "cpu"
+    else:
+        device = DEFAULT_DEVICE if (has_cuda or DEFAULT_DEVICE == "cpu") else "cpu"
+    device_name = torch.cuda.get_device_name(0) if (has_cuda and device != "cpu") else "CPU"
     print(f" • Thiết bị tính toán : {device_name} (device='{device}')")
 
     # 2. Tự động tìm mô hình tốt nhất (.engine nếu có, không thì .pt)
     engine_path = ROOT / "models" / "detection" / "best.engine"
     pt_path = ROOT / "models" / "detection" / "best.pt"
-    if engine_path.exists():
+    if DEFAULT_WEIGHTS.lower() != "auto" and (ROOT / DEFAULT_WEIGHTS).exists():
+        weights_path = str(ROOT / DEFAULT_WEIGHTS)
+        model_type = "Custom Model (.env)"
+    elif engine_path.exists():
         weights_path = str(engine_path)
         model_type = "TensorRT FP16 Engine (Tối ưu GPU tối đa)"
     else:
@@ -51,17 +102,16 @@ def main():
     print(f" • Mô hình YOLO       : {weights_path}")
     print(f"   └─ Định dạng       : {model_type}")
 
-    # 3. Tự động tìm video mẫu trong dataset
-    sample_videos = list((ROOT / "runs" / "mlp_dataset_videos").glob("*.mp4")) if (ROOT / "runs" / "mlp_dataset_videos").exists() else []
-    if sample_videos:
-        video_source = str(sample_videos[0])
-    elif (ROOT / "NO20250603-083005-009846F.MP4").exists():
-        video_source = str(ROOT / "NO20250603-083005-009846F.MP4")
-    else:
-        video_source = "0"  # Camera mặc định
-    print(f" • Video kiểm thử     : {Path(video_source).name}")
-    print(f" • Kích thước ảnh     : 320x320 pixels")
-    print(f" • Số frame kiểm tra  : 100 frames (5 frame đầu khởi động bỏ qua)")
+    # 3. Tự động tìm video mẫu theo cấu hình .env
+    video_source = resolve_video_source(ROOT, DEFAULT_VIDEO_SOURCE)
+    imgsz_val = DEFAULT_IMGSZ
+    max_frames = DEFAULT_MAX_FRAMES
+    warmup_frames = DEFAULT_WARMUP_FRAMES
+
+    video_label = Path(video_source).name if video_source != "0" else "Camera (0)"
+    print(f" • Video kiểm thử     : {video_label}")
+    print(f" • Kích thước ảnh     : {imgsz_val}x{imgsz_val} pixels")
+    print(f" • Số frame kiểm tra  : {max_frames} frames ({warmup_frames} frame đầu khởi động bỏ qua)")
     print("=" * 65)
     print("⏳ Đang khởi động các tiến trình xử lý ngầm (Đợi 2-3 giây)...")
 
@@ -73,16 +123,16 @@ def main():
     processes = [
         Process(
             target=video_reader_process,
-            args=(video_source, (320, 320), 32, frame_queue, stop_event),
+            args=(video_source, (imgsz_val, imgsz_val), 32, frame_queue, stop_event),
             name="Run_VideoReader"
         ),
         Process(
             target=detector_tracker_process,
             kwargs=dict(
                 weights=[weights_path],
-                imgsz=(320, 320),
-                conf_thres=0.25,
-                iou_thres=0.45,
+                imgsz=(imgsz_val, imgsz_val),
+                conf_thres=DEFAULT_CONF_THRES,
+                iou_thres=DEFAULT_IOU_THRES,
                 device=device,
                 frame_queue=frame_queue,
                 detect_queue=detect_queue,
@@ -108,8 +158,6 @@ def main():
     e2e_latency_list = []
 
     frame_count = 0
-    max_frames = 100
-    warmup_frames = 5
     t_benchmark_start = None
 
     try:
@@ -199,6 +247,7 @@ def main():
     else:
         print(f"  ℹ️ Tốc độ hiện tại: {avg_fps:.1f} FPS (Khuyến nghị chuyển sang TensorRT để đạt >22 FPS)")
     print("=" * 65 + "\n")
+
 
 if __name__ == "__main__":
     main()

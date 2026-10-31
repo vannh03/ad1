@@ -1,49 +1,48 @@
 # HƯỚNG DẪN 3 BƯỚC ĐO FPS & LATENCY TRÊN JETSON NANO
-> **Dành riêng cho người mới bắt đầu:** Mọi cấu hình, chọn model, chọn GPU, tính toán độ trễ đã được tự động hóa 100%.
+> **Dành riêng cho người mới bắt đầu:** Mọi cấu hình trong file `.env`, chọn model, chọn GPU, tạo môi trường ảo `.venv` và tính toán độ trễ đã được tự động hóa 100%.
 
 ---
 
-## 🎯 BƯỚC 1: Tải Code về Jetson Nano
-Trên màn hình Jetson Nano (kết nối qua RealVNC), mở **Terminal** và gõ:
+## 🎯 BƯỚC 1: Tải Code về Jetson Nano từ GitHub
+Trên màn hình Jetson Nano (kết nối qua RealVNC hoặc SSH), mở **Terminal** và gõ:
 ```bash
 cd /home/jetson
-
-# Nếu bạn đã tải file module.zip lên Google Drive:
-pip3 install gdown
-gdown "https://drive.google.com/uc?id=<ID_FILE_CUA_BAN>" -O module.zip
-unzip module.zip -d ADDAS
-cd ADDAS/module
+git clone https://github.com/vannh03/camera.git
+cd camera
 ```
-*(Hoặc mở trình duyệt trên Jetson Nano tải file `module.zip` về, giải nén và mở thư mục `ADDAS/module`).*
 
 ---
 
 ## ⚙️ BƯỚC 2: Cài đặt Tự động 1-Click (Chỉ chạy đúng 1 lần đầu)
-Trong thư mục `ADDAS/module`, chạy lệnh:
+Trong thư mục `camera`, chạy lệnh:
 ```bash
 bash setup_jetson.sh
 ```
-*Script này sẽ tự động làm hết mọi việc: tạo bộ nhớ Swap 8GB, bật nguồn 10W, cài đặt PyTorch CUDA, cài đặt YOLOv8 và tối ưu hóa TensorRT. Bạn chỉ cần ngồi đợi máy chạy xong.*
+*Script này sẽ tự động làm hết mọi việc: tạo bộ nhớ Swap 8GB, bật nguồn 10W, tạo môi trường ảo `.venv` kế thừa CUDA/TensorRT của JetPack, cài đặt PyTorch CUDA, YOLOv8 và tối ưu hóa TensorRT.*
 
 ---
 
 ## 🚀 BƯỚC 3: Chạy và Lấy kết quả FPS & Latency
 Khi cần đo hiệu năng, bạn chỉ cần gõ đúng 1 dòng:
 ```bash
-python3 run.py
+bash run_jetson.sh
 ```
-*(hoặc: `bash run_jetson.sh`)*
+*(hoặc: `python3 run.py`)*
+
+> 💡 **Mẹo chỉnh cấu hình nhanh qua file `.env`:**
+> Nếu muốn đổi video kiểm thử, đổi kích thước ảnh (`ADAS_IMGSZ=320`), hoặc đổi số frame kiểm tra (`ADAS_MAX_FRAMES=100`), bạn chỉ cần mở file `.env` ngay trong thư mục gốc để sửa mà không cần đụng vào code Python!
 
 ### 📊 Mẫu kết quả hiển thị trên màn hình:
 ```text
 =================================================================
 🚗 HỆ THỐNG CẢNH BÁO VA CHẠM THÔNG MINH (ADAS) - JETSON NANO
 =================================================================
+ • Cấu hình (.env)    : Đã nạp (.env)
  • Thiết bị tính toán : NVIDIA Tegra X1 (device='0')
  • Mô hình YOLO       : models/detection/best.pt
- • Video kiểm thử     : wrong_way_NO20250603-083305-009849F_annotated.mp4
+ • Video kiểm thử     : NO20250604-063730-010007F.MP4
  • Kích thước ảnh     : 320x320 pixels
- • Số frame kiểm tra  : 100 frames
+ • Số frame kiểm tra  : 100 frames (5 frame đầu khởi động bỏ qua)
 =================================================================
 [CHUAN_XAC] Frame 100/100 | FPS:  24.8 | Latency:  40.3ms (YOLO: 37.1ms, Rule:  3.2ms)
 

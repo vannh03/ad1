@@ -1,10 +1,83 @@
 import os
 import sys
 from pathlib import Path
+
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+ENV_FILE_PATH = PROJECT_ROOT / ".env"
+
+
+def load_dotenv(dotenv_path=None):
+    """Đọc file .env bằng Python thuần (không cần thư viện ngoài trên Jetson Nano)."""
+    path = Path(dotenv_path) if dotenv_path else ENV_FILE_PATH
+    if not path.exists():
+        return False
+    try:
+        with open(str(path), "r", encoding="utf-8") as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("export "):
+                    line = line[7:].strip()
+                if "=" not in line:
+                    continue
+                key, val = line.split("=", 1)
+                key = key.strip()
+                val = val.strip()
+                if len(val) >= 2 and val[0] == val[-1] and val[0] in ("'", '"'):
+                    val = val[1:-1]
+                elif "#" in val:
+                    val = val.split("#", 1)[0].strip()
+                if key:
+                    os.environ.setdefault(key, val)
+        return True
+    except Exception:
+        return False
+
+
+ENV_LOADED = load_dotenv(ENV_FILE_PATH)
+
+
+def _get_env_bool(key, default=False):
+    val = os.environ.get(key)
+    if val is None:
+        return default
+    return val.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _get_env_int(key, default):
+    val = os.environ.get(key)
+    if val is None:
+        return default
+    try:
+        return int(val.strip())
+    except ValueError:
+        return default
+
+
+def _get_env_float(key, default):
+    val = os.environ.get(key)
+    if val is None:
+        return default
+    try:
+        return float(val.strip())
+    except ValueError:
+        return default
+
+
+DEFAULT_VIDEO_SOURCE = os.environ.get("ADAS_VIDEO_SOURCE", "NO20250604-063730-010007F.MP4")
+DEFAULT_WEIGHTS = os.environ.get("ADAS_WEIGHTS", "auto")
+DEFAULT_IMGSZ = _get_env_int("ADAS_IMGSZ", 320)
+DEFAULT_DEVICE = os.environ.get("ADAS_DEVICE", "auto")
+DEFAULT_MAX_FRAMES = _get_env_int("ADAS_MAX_FRAMES", 100)
+DEFAULT_WARMUP_FRAMES = _get_env_int("ADAS_WARMUP_FRAMES", 5)
+DEFAULT_CONF_THRES = _get_env_float("ADAS_CONF_THRES", 0.25)
+DEFAULT_IOU_THRES = _get_env_float("ADAS_IOU_THRES", 0.45)
+
 MODELS_DIR = PROJECT_ROOT / "models"
 MODEL_DETECTION_PATH = MODELS_DIR / "detection" / "best.pt"
 MODEL_MLP_PATH = MODELS_DIR / "decision" / "mlp_model.pth"
@@ -40,8 +113,8 @@ DISTANCE_CONFIG = {
     }
 }
 AUDIO_CONFIG = {
-    "cooldown_seconds": 5.0,
-    "enabled": True
+    "cooldown_seconds": _get_env_float("ADAS_AUDIO_COOLDOWN", 5.0),
+    "enabled": _get_env_bool("ADAS_AUDIO_ENABLED", False)
 }
 
 # Cấu hình thuật toán suy luận rủi ro sớm TSDA-EW

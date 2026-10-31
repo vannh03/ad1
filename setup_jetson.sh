@@ -7,6 +7,9 @@
 
 set -e
 
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd "$CURRENT_DIR"
+
 echo ""
 echo "========================================================================"
 echo "🚀 BẮT ĐẦU TỰ ĐỘNG CÀI ĐẶT MÔI TRƯỜNG ADAS TRÊN JETSON NANO"
@@ -35,13 +38,22 @@ echo "▶ [2/6] Đang kích hoạt chế độ 10W (MAXN) và ép xung quạt t�
 sudo nvpmodel -m 0 || true
 sudo jetson_clocks || true
 
-# 3. Cài đặt các gói hệ thống Ubuntu 18.04
-echo "▶ [3/6] Đang cập nhật hệ thống và cài đặt gói bổ trợ C++/Python..."
+# 3. Cài đặt các gói hệ thống Ubuntu 18.04 & khởi tạo môi trường ảo .venv
+echo "▶ [3/6] Đang cập nhật hệ thống và khởi tạo môi trường ảo Python (.venv)..."
 sudo apt update -y
-sudo apt install -y python3-pip python3-dev git cmake unzip \
+sudo apt install -y python3-pip python3-dev python3-venv git cmake unzip \
                     libopenblas-base libopenmpi-dev libomp-dev \
                     libjpeg-dev zlib1g-dev libavcodec-dev libavformat-dev libswscale-dev \
                     libcanberra-gtk-module libcanberra-gtk3-module libgstreamer1.0-dev
+
+if [ ! -d "$CURRENT_DIR/.venv" ]; then
+    python3 -m venv --system-site-packages "$CURRENT_DIR/.venv" || true
+fi
+if [ -f "$CURRENT_DIR/.venv/bin/activate" ]; then
+    # shellcheck disable=SC1091
+    source "$CURRENT_DIR/.venv/bin/activate"
+    echo "  -> Đã kích hoạt môi trường ảo .venv (kế thừa CUDA/TensorRT của JetPack)!"
+fi
 
 # 4. Cài đặt PyTorch 1.10 và Torchvision
 echo "▶ [4/6] Đang kiểm tra PyTorch CUDA trên Jetson Nano..."
@@ -59,8 +71,8 @@ else
     git clone --branch v0.11.1 https://github.com/pytorch/vision torchvision
     cd torchvision
     export BUILD_VERSION=0.11.1
-    python3 setup.py install --user
-    cd -
+    python3 setup.py install
+    cd "$CURRENT_DIR"
     rm -rf /tmp/torchvision
 fi
 
@@ -80,12 +92,11 @@ if ! python3 -c "import ultralytics" 2>/dev/null; then
     sed -i 's/from importlib import metadata/import pkg_resources as metadata/g' ultralytics/utils/checks.py 2>/dev/null || true
     sed -i 's/import importlib.metadata as metadata/import pkg_resources as metadata/g' ultralytics/utils/__init__.py 2>/dev/null || true
     pip3 install --no-deps -e .
-    cd -
+    cd "$CURRENT_DIR"
     rm -rf /tmp/ultralytics
 fi
 
 # Tùy chọn: Chuyển đổi sang TensorRT Engine nếu chưa có
-CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ENGINE_FILE="$CURRENT_DIR/models/detection/best.engine"
 PT_FILE="$CURRENT_DIR/models/detection/best.pt"
 
@@ -99,8 +110,8 @@ echo ""
 echo "========================================================================"
 echo "🎉 CÀI ĐẶT HOÀN TẤT 100%! BÂY GIỜ BẠN CHỈ CẦN CHẠY LỆNH:"
 echo ""
-echo "         python3 run.py"
-echo "   hoặc: bash run_jetson.sh"
-echo ""
+echo "         bash run_jetson.sh"
+echo "   hoặc: python3 run.py"
+echo "   (Mọi thông số cấu hình có thể chỉnh nhanh trong file .env)"
 echo "========================================================================"
 echo ""

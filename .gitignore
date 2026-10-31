@@ -10,3 +10,9 @@ Thumbs.db
 # Partial downloads & temporary files
 *.part
 runs/
+
+# Virtual environment folders (keep .env configuration file tracked!)
+.venv/
+venv/
+env/
+!.env
