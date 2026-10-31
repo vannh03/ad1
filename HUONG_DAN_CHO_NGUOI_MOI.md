@@ -8,8 +8,8 @@ Trên màn hình Jetson Nano (kết nối qua RealVNC), mở **Terminal** và ch
 ```bash
 # Cách 1: Sử dụng Git (Khuyên dùng)
 cd /media/tx/disk    # Hoặc cd /home/jetson
-git clone https://github.com/vannh03/camera.git
-cd camera
+git clone https://github.com/vannh03/ad1.git
+cd ad1
 
 # (Nếu đã clone rồi thì chỉ cần cập nhật code mới nhất):
 # git pull
