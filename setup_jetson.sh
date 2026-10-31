@@ -20,27 +20,28 @@ sudo rm -f /swapfile 2>/dev/null || true
 rm -f ~/module.zip 2>/dev/null || true
 sudo apt-get clean 2>/dev/null || true
 
-# Ưu tiên kích hoạt ZRAM của Jetson Nano (Nén RAM làm Swap, tốn 0 byte ổ đĩa!)
-if [ -f /usr/bin/nvzramconfig.sh ]; then
-    echo "  -> Đang bật ZRAM Swap của Jetson Nano (tốn 0 byte ổ cứng)..."
-    sudo /usr/bin/nvzramconfig.sh 2>/dev/null || sudo systemctl restart nvzramconfig 2>/dev/null || true
-fi
+# Tự động nhận diện và kích hoạt ZRAM nếu chưa có Swap
+CURRENT_SWAP=$(free -m 2>/dev/null | awk '/Swap:/ {print $2}')
+if [ -z "$CURRENT_SWAP" ]; then CURRENT_SWAP=0; fi
 
-AVAIL_DISK_MB=$(df -m / | awk 'NR==2 {print $4}')
-echo "  -> Dung lượng ổ cứng khả dụng hiện tại: ${AVAIL_DISK_MB} MB"
-
-# Chỉ tạo swapfile nếu dung lượng ổ cứng còn dư dả (> 6000MB) và chưa có Swap
-CURRENT_SWAP=$(free -m | awk '/Swap:/ {print $2}')
-if [ "$CURRENT_SWAP" -lt 1500 ] && [ "$AVAIL_DISK_MB" -gt 6000 ]; then
-    echo "  -> Đang tạo thêm 2GB Swapfile bổ trợ..."
-    sudo fallocate -l 2G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048 2>/dev/null || true
-    if [ -f /swapfile ]; then
-        sudo chmod 600 /swapfile
-        sudo mkswap /swapfile 2>/dev/null || true
-        sudo swapon /swapfile 2>/dev/null || true
+if [ "$CURRENT_SWAP" -gt 500 ]; then
+    echo "  -> Bộ nhớ ảo Swap/ZRAM đã có sẵn: ${CURRENT_SWAP} MB (Đang hoạt động tốt)."
+else
+    echo "  -> Đang kích hoạt bộ nhớ nén ZRAM (tốn 0 byte ổ cứng)..."
+    if [ -x /sbin/nvzramconfig.sh ]; then
+        sudo /sbin/nvzramconfig.sh 2>/dev/null || true
+    elif [ -x /usr/sbin/nvzramconfig.sh ]; then
+        sudo /usr/sbin/nvzramconfig.sh 2>/dev/null || true
+    elif [ -x /etc/systemd/nvzramconfig.sh ]; then
+        sudo /etc/systemd/nvzramconfig.sh 2>/dev/null || true
+    elif systemctl is-enabled nvzramconfig >/dev/null 2>&1; then
+        sudo systemctl restart nvzramconfig 2>/dev/null || true
     fi
 fi
-echo "  -> Cấu hình bộ nhớ ảo hoàn tất! (Swap hiện tại: $(free -m | awk '/Swap:/ {print $2}') MB)"
+
+AVAIL_DISK_MB=$(df -m / 2>/dev/null | awk 'NR==2 {print $4}')
+echo "  -> Dung lượng ổ cứng khả dụng hiện tại: ${AVAIL_DISK_MB} MB"
+echo "  -> Cấu hình bộ nhớ ảo hoàn tất! (Swap hiện tại: $(free -m 2>/dev/null | awk '/Swap:/ {print $2}') MB)"
 
 # 2. Bật chế độ công suất tối đa 10W và bật quạt
 echo "▶ [2/6] Đang kích hoạt chế độ 10W (MAXN) và ép xung quạt tản nhiệt..."
