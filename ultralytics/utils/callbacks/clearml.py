@@ -23,7 +23,8 @@ def _log_debug_samples(files, title: str = "Debug Samples") -> None:
     """
     import re
 
-    if task := Task.current_task():
+    task = Task.current_task()
+    if task:
         for f in files:
             if f.exists():
                 it = re.search(r"_batch(\d+)", f.name)
@@ -56,7 +57,8 @@ def _log_plot(title: str, plot_path: str) -> None:
 def on_pretrain_routine_start(trainer) -> None:
     """Initialize and connect ClearML task at the start of pretraining routine."""
     try:
-        if task := Task.current_task():
+        task = Task.current_task()
+        if task:
             # WARNING: make sure the automatic pytorch and matplotlib bindings are disabled!
             # We are logging these plots and model files manually in the integration
             from clearml.binding.frameworks.pytorch_bind import PatchPyTorchModelIO
@@ -84,7 +86,8 @@ def on_pretrain_routine_start(trainer) -> None:
 
 def on_train_epoch_end(trainer) -> None:
     """Log debug samples for the first epoch and report current training progress."""
-    if task := Task.current_task():
+    task = Task.current_task()
+    if task:
         # Log debug samples for first epoch only
         if trainer.epoch == 1:
             _log_debug_samples(sorted(trainer.save_dir.glob("train_batch*.jpg")), "Mosaic")
@@ -97,7 +100,8 @@ def on_train_epoch_end(trainer) -> None:
 
 def on_fit_epoch_end(trainer) -> None:
     """Report model information and metrics to logger at the end of an epoch."""
-    if task := Task.current_task():
+    task = Task.current_task()
+    if task:
         # Report epoch time and validation metrics
         task.get_logger().report_scalar(
             title="Epoch Time", series="Epoch Time", value=trainer.epoch_time, iteration=trainer.epoch
@@ -121,7 +125,8 @@ def on_val_end(validator) -> None:
 
 def on_train_end(trainer) -> None:
     """Log final model and training results on training completion."""
-    if task := Task.current_task():
+    task = Task.current_task()
+    if task:
         # Log final results, confusion matrix and PR plots
         for f in [*trainer.plots.keys(), *trainer.validator.plots.keys()]:
             if "batch" not in f.name:

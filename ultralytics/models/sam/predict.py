@@ -3115,7 +3115,7 @@ class SAM3VideoSemanticPredictor(SAM3SemanticPredictor):
         new_det_num = len(new_det_fa_inds)
         num_obj_dropped_due_to_limit = 0
         if prev_obj_num + new_det_num > self.max_num_objects:
-            LOGGER.warning(f"hitting {self.max_num_objects=} with {new_det_num=} and {prev_obj_num=}")
+            LOGGER.warning(f"hitting self.max_num_objects={self.max_num_objects} with new_det_num={new_det_num} and prev_obj_num={prev_obj_num}")
             new_det_num_to_keep = self.max_num_objects - prev_obj_num
             num_obj_dropped_due_to_limit = new_det_num - new_det_num_to_keep
             new_det_fa_inds = self._drop_new_det_with_obj_limit(new_det_fa_inds, det_scores_np, new_det_num_to_keep)
@@ -3478,7 +3478,7 @@ class SAM3VideoSemanticPredictor(SAM3SemanticPredictor):
                 for j in range(batch_size):
                     if suppress_i_mask[i, j]:
                         LOGGER.debug(
-                            f"{frame_idx=}: Suppressing obj {obj_ids[i]} last occluded {last_occluded[i]} in favor of {obj_ids[j]} last occluded {last_occluded[j]}"
+                            f"frame_idx={frame_idx}: Suppressing obj {obj_ids[i]} last occluded {last_occluded[i]} in favor of {obj_ids[j]} last occluded {last_occluded[j]}"
                         )
 
             # Log j-suppression cases (where j gets suppressed in favor of i)
@@ -3486,7 +3486,7 @@ class SAM3VideoSemanticPredictor(SAM3SemanticPredictor):
                 for j in range(batch_size):
                     if suppress_j_mask[i, j]:
                         LOGGER.debug(
-                            f"{frame_idx=}: Suppressing obj {obj_ids[j]} last occluded {last_occluded[j]} in favor of {obj_ids[i]} last occluded {last_occluded[i]}"
+                            f"frame_idx={frame_idx}: Suppressing obj {obj_ids[j]} last occluded {last_occluded[j]} in favor of {obj_ids[i]} last occluded {last_occluded[i]}"
                         )
 
         return to_suppress
@@ -3971,7 +3971,7 @@ class SAM3VideoSemanticPredictor(SAM3SemanticPredictor):
         sd = torch.load(ckpt_path, map_location="cpu", weights_only=True)["model"]
         missing_keys, unexpected_keys = self.load_state_dict(sd, strict=strict)
         if len(missing_keys) > 0 or len(unexpected_keys) > 0:
-            LOGGER.warning(f"Loaded ckpt with {missing_keys=}, {unexpected_keys=}")
+            LOGGER.warning(f"Loaded ckpt with missing_keys={missing_keys}, unexpected_keys={unexpected_keys}")
         else:
             LOGGER.info("Loaded ckpt successfully without missing or unexpected keys")
 

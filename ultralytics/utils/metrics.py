@@ -462,7 +462,8 @@ class ConfusionMatrix(DataExportMixin):
         gt_match[m0] = m1
         matched_det = set(m1.tolist())
         for i, gc in enumerate(gt_classes):
-            if (di := gt_match[i].item()) >= 0:
+            di = gt_match[i].item()
+            if di >= 0:
                 dc = detection_classes[di]
                 self.matrix[dc, gc] += 1  # TP if class is correct else both an FP and an FN
                 if dc == gc:

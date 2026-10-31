@@ -45,7 +45,8 @@ def _log_images(path: Path, prefix: str = "") -> None:
         name = path.name
 
         # Group images by batch to enable sliders in UI
-        if m := re.search(r"_batch(\d+)", name):
+        m = re.search(r"_batch(\d+)", name)
+        if m:
             ni = m[1]
             new_stem = re.sub(r"_batch(\d+)", "_batch", path.stem)
             name = (Path(new_stem) / ni).with_suffix(path.suffix)

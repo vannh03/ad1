@@ -91,14 +91,17 @@ def main():
     print(f" • Mô hình YOLO       : {weights_path}")
     print(f"   └─ Định dạng       : {model_type}")
 
-    # 3. Tự động tìm video mẫu trong dataset
-    sample_videos = list((ROOT / "runs" / "mlp_dataset_videos").glob("*.mp4")) if (ROOT / "runs" / "mlp_dataset_videos").exists() else []
-    if sample_videos:
-        video_source = str(sample_videos[0])
-    elif (ROOT / "NO20250603-083005-009846F.MP4").exists():
-        video_source = str(ROOT / "NO20250603-083005-009846F.MP4")
+    # 3. Tự động tìm video mẫu trong thư mục
+    if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
+        video_source = sys.argv[1]
     else:
-        video_source = "0"  # Camera mặc định
+        sample_videos = list(ROOT.glob("*.MP4")) + list(ROOT.glob("*.mp4"))
+        if not sample_videos and (ROOT / "runs").exists():
+            sample_videos = list((ROOT / "runs").rglob("*.mp4")) + list((ROOT / "runs").rglob("*.MP4"))
+        if sample_videos:
+            video_source = str(sample_videos[0])
+        else:
+            video_source = "0"  # Camera mặc định nếu không có video nào
     print(f" • Video kiểm thử     : {Path(video_source).name}")
     print(f" • Kích thước ảnh     : 320x320 pixels")
     print(f" • Số frame kiểm tra  : 100 frames (5 frame đầu khởi động bỏ qua)")

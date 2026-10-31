@@ -312,9 +312,8 @@ class BasePredictor:
         # Setup model
         if self.model is None:
             self.setup_model(model)
-        if not getattr(self.model, "base_model", True) and (
-            unsupported := [k for k in ("augment", "embed", "visualize") if getattr(self.args, k)]
-        ):
+        unsupported = [k for k in ("augment", "embed", "visualize") if getattr(self.args, k)]
+        if not getattr(self.model, "base_model", True) and unsupported:
             LOGGER.warning(f"{unsupported} not supported by this model (format='{self.model.format}'), ignoring.")
             self.args.augment, self.args.embed, self.args.visualize = False, None, False
 
@@ -393,7 +392,8 @@ class BasePredictor:
 
             # Final results, under the lock: seen is reset by every run, so reading it outside could divide this run's
             # profilers by a concurrent run's count. px and profilers are locals and are already private to this run.
-            if seen := self.seen:
+            seen = self.seen
+            if seen:
                 t = tuple(x.t / seen * 1e3 for x in profilers)  # speeds per image
                 self.speed = dict(zip(("preprocess", "inference", "postprocess"), t))
                 self.pixels = round(px / seen)  # mean area, pairing with speeds that are themselves per-image means

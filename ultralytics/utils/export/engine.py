@@ -415,7 +415,7 @@ def onnx2engine(
         # https://github.com/ultralytics/ultralytics/issues/24668. Scope this to the head: every SiLU activation is
         # also a Sigmoid, and constraining all of them costs INT8 speed across backbone and neck.
         names = [network.get_layer(i).name for i in range(network.num_layers)]
-        indices = [int(m.group(1)) for n in names if (m := re.match(r"/model\.(\d+)/", n))]
+        indices = [int(re.match(r"/model\.(\d+)/", n).group(1)) for n in names if re.match(r"/model\.(\d+)/", n)]
         head = f"/model.{max(indices)}/" if indices else "/"
         count = 0
         for i in range(network.num_layers):

@@ -156,7 +156,8 @@ def onnx2qnn(
 
         ctx_model = onnx.load(str(ctx_file))
         existing = {p.key for p in ctx_model.metadata_props}
-        if missing := {k: v for k, v in metadata.items() if str(k) not in existing}:
+        missing = {k: v for k, v in metadata.items() if str(k) not in existing}
+        if missing:
             for k, v in missing.items():
                 entry = ctx_model.metadata_props.add()
                 entry.key, entry.value = str(k), str(v)

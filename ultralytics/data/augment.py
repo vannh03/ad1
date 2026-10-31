@@ -1168,7 +1168,8 @@ class RandomPerspective(BaseTransform):
             (dict): Parameters including 'M' (affine matrix), 'scale', 'orig_shape', and 'size'.
         """
         img = labels["img"]
-        if (rect_shape := labels.get("rect_shape")) is not None:  # rect has higher priority
+        rect_shape = labels.get("rect_shape")
+        if rect_shape is not None:  # rect has higher priority
             size = (int(rect_shape[1]), int(rect_shape[0]))  # rect mode batch shape (h, w) to (w, h)
         else:
             size = (img.shape[1], img.shape[0]) if self.size is None else self.size  # w, h

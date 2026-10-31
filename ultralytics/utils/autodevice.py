@@ -204,11 +204,12 @@ if __name__ == "__main__":
     gpu_info = GPUInfo()
     gpu_info.print_status()
 
-    if selected := gpu_info.select_idle_gpu(
+    selected = gpu_info.select_idle_gpu(
         count=num_gpus_to_select,
         min_memory_fraction=required_free_mem_fraction,
         min_util_fraction=required_free_util_fraction,
-    ):
+    )
+    if selected:
         print(f"\n==> Using selected GPU indices: {selected}")
         devices = [f"cuda:{idx}" for idx in selected]
         print(f"    Target devices: {devices}")

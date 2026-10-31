@@ -449,7 +449,8 @@ class LoadImagesAndVideos:
             else:
                 # Handle image files
                 self.mode = "image"
-                if self.bs >= 8 and NUM_THREADS > 1 and (n := min(self.bs - len(imgs), self.ni - self.count)) >= 8:
+                n = min(self.bs - len(imgs), self.ni - self.count)
+                if self.bs >= 8 and NUM_THREADS > 1 and n >= 8:
                     image_paths = self.files[self.count : self.count + n]
                     # Keep fallback formats serial: their lazy PIL plugin registration is not thread-safe.
                     if not any(Path(x).suffix.lower() in PIL_FALLBACK_SUFFIXES for x in image_paths):

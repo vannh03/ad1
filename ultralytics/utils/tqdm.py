@@ -306,7 +306,8 @@ class TQDM:
                     progress_str = self._fit(f"{self._fit(self.desc, width - len(fields) - 2)}: {fields}", width)
             # Non-interactive environments avoid the carriage return which creates empty lines
             frame = progress_str if self.noninteractive else f"\r\033[K{progress_str}"
-            if progress := getattr(self.file, "progress", None):
+            progress = getattr(self.file, "progress", None)
+            if progress:
                 progress(id(self), frame)  # a redraw is bar state, so log consumers keep it out of their log
             else:
                 self.file.write(frame)
@@ -349,7 +350,8 @@ class TQDM:
             else:
                 self._display(final=True)
 
-            if progress := getattr(self.file, "progress", None):
+            progress = getattr(self.file, "progress", None)
+            if progress:
                 progress(id(self), "")  # bar closed: the last frame is now log content
 
             # Cleanup

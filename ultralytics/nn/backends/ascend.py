@@ -50,7 +50,8 @@ class AscendBackend(BaseBackend):
 
     def __del__(self):
         """Release the Ascend device-side resources held by the inference session."""
-        if model := getattr(self, "model", None):
+        model = getattr(self, "model", None)
+        if model:
             model.free_resource()
 
     def forward(self, im: torch.Tensor) -> np.ndarray | list[np.ndarray]:

@@ -367,11 +367,12 @@ class Tuner:
 
         # Try MongoDB first if available
         if self.mongodb:
-            if results := list(
+            results = list(
                 self.collection.find({"fitness": {"$exists": True}}, {"fitness": 1, "hyperparameters": 1}).sort(
                     "_id", 1
                 )
-            ):
+            )
+            if results:
                 history = np.array(
                     [
                         [r["fitness"]] + [r["hyperparameters"].get(k, self.args.get(k)) for k in self.space]

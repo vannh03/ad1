@@ -20,7 +20,8 @@ def onnx_calibration_reader(dataset, transform_fn, input_name: str = "images", b
 
         def get_next(self):
             """Return the next calibration sample, or None when exhausted."""
-            if (b := next(self.iterator, None)) is None:
+            b = next(self.iterator, None)
+            if b is None:
                 return None
             im = transform_fn(b)
             if batch and im.shape[0] != batch:  # tile up to the static batch dimension

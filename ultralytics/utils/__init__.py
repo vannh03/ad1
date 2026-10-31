@@ -970,7 +970,8 @@ def get_user_config_dir(sub_dir="Ultralytics"):
     Returns:
         (Path): The path to the user config directory.
     """
-    if env_dir := os.getenv("YOLO_CONFIG_DIR"):
+    env_dir = os.getenv("YOLO_CONFIG_DIR")
+    if env_dir:
         p = Path(env_dir).expanduser() / sub_dir
     elif LINUX:
         p = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config")) / sub_dir

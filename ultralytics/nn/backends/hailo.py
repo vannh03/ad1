@@ -70,7 +70,8 @@ class HailoBackend(BaseBackend):
 
     def __del__(self):
         """Release the Hailo pipeline and device."""
-        if stack := getattr(self, "_stack", None):
+        stack = getattr(self, "_stack", None)
+        if stack:
             stack.close()
 
     def forward(self, im: torch.Tensor) -> np.ndarray | list[torch.Tensor]:

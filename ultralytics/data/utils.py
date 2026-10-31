@@ -202,7 +202,8 @@ def exif_size(img: Image.Image) -> tuple[int, int]:
     s = img.size  # (width, height)
     if img.format == "JPEG":  # only support JPEG images
         try:
-            if exif := img.getexif():
+            exif = img.getexif()
+            if exif:
                 rotation = exif.get(274, None)  # the EXIF key for the orientation tag is 274
                 if rotation in {6, 8}:  # rotation 270 or 90
                     s = s[1], s[0]
@@ -347,7 +348,8 @@ def verify_image_label(args: tuple) -> list:
                     segments = [np.array(x[1:], dtype=np.float32).reshape(-1, 2) for x in lb]  # (cls, xy1...)
                     lb = np.concatenate((classes.reshape(-1, 1), segments2boxes(segments)), 1)  # (cls, xywh)
                 lb = np.array(lb, dtype=np.float32)
-            if nl := len(lb):
+            nl = len(lb)
+            if nl:
                 if keypoint:
                     assert lb.shape[1] == (5 + nkpt * ndim), f"labels require {(5 + nkpt * ndim)} columns each"
                     points = lb[:, 5:].reshape(-1, ndim)[:, :2]
@@ -524,7 +526,8 @@ def find_dataset_yaml(path: Path) -> Path:
 
 def get_split_fraction(fraction: float | list[float | int], split: str) -> float | int:
     """Return a split ratio/count, normalizing boundary values to 0.0 (none) or 1.0 (all)."""
-    if isinstance(fraction, list) and split in (splits := ("train", "val", "test")):
+    splits = ("train", "val", "test")
+    if isinstance(fraction, list) and split in splits:
         index = splits.index(split)
         fraction = fraction[index] if index < len(fraction) else 1.0
     elif split != "train":
@@ -716,7 +719,8 @@ def check_cls_dataset(dataset: str | Path, split: str = "") -> dict[str, Any]:
     train_set = data_dir / "train"
     if not train_set.is_dir():
         LOGGER.warning(f"Dataset 'split=train' not found at {train_set}")
-        if image_files := [f for f in data_dir.rglob("*.*") if f.suffix[1:].lower() in IMG_FORMATS]:
+        image_files = [f for f in data_dir.rglob("*.*") if f.suffix[1:].lower() in IMG_FORMATS]
+        if image_files:
             from ultralytics.data.split import split_classify_dataset
 
             LOGGER.info(f"Found {len(image_files)} images in subdirectories. Attempting to split...")
@@ -741,7 +745,8 @@ def check_cls_dataset(dataset: str | Path, split: str = "") -> dict[str, Any]:
         LOGGER.warning("Dataset 'split=test' not found, using 'split=val' instead.")
         test_set = val_set
 
-    if (ndjson_names := data_dir / ".ndjson.yaml").is_file():
+    ndjson_names = data_dir / ".ndjson.yaml"
+    if ndjson_names.is_file():
         names = YAML.load(ndjson_names)["names"]
     else:
         names = dict(enumerate(sorted(x.name for x in (data_dir / "train").iterdir() if x.is_dir())))

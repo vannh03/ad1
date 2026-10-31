@@ -293,7 +293,8 @@ def get_google_drive_file_info(link: str) -> tuple[str, str | None]:
         for k, v in response.cookies.items():
             if k.startswith("download_warning"):
                 drive_url += f"&confirm={v}"  # v is token
-        if cd := response.headers.get("content-disposition"):
+        cd = response.headers.get("content-disposition")
+        if cd:
             filename = re.findall('filename="(.+)"', cd)[0]
     return drive_url, filename
 
@@ -445,10 +446,12 @@ def safe_download(
                         continue
                     if m.isdir():
                         target.mkdir(parents=True, exist_ok=True)
-                    elif source := tar.extractfile(m):
-                        target.parent.mkdir(parents=True, exist_ok=True)
-                        with source, open(target, "wb") as out:  # 'f' is the archive path, deleted below
-                            shutil.copyfileobj(source, out)
+                    else:
+                        source = tar.extractfile(m)
+                        if source:
+                            target.parent.mkdir(parents=True, exist_ok=True)
+                            with source, open(target, "wb") as out:
+                                shutil.copyfileobj(source, out)
         if delete:
             f.unlink()  # remove archive
         return unzip_dir

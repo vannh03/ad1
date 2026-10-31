@@ -964,7 +964,8 @@ async def _convert_ndjson_to_yolo(ndjson_path: Path, output_path: Path, local: b
     metadata_path = dataset_dir / (".ndjson.yaml" if is_classification else "data.yaml")
     if metadata_path.is_file():
         try:
-            if (cached := YAML.load(metadata_path)).get("hash") == _hash and cached.get("complete") is True:
+            cached = YAML.load(metadata_path)
+            if cached.get("hash") == _hash and cached.get("complete") is True:
                 return dataset_dir if is_classification else metadata_path
         except Exception:
             pass

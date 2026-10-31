@@ -140,9 +140,10 @@ class Inference:
         elif self.source == "image":
             import tempfile  # scope import
 
-            if imgfiles := self.st.sidebar.file_uploader(
+            imgfiles = self.st.sidebar.file_uploader(
                 "Upload Image Files", type=IMG_FORMATS, accept_multiple_files=True
-            ):
+            )
+            if imgfiles:
                 for imgfile in imgfiles:  # Save each uploaded image to a temporary file
                     with tempfile.NamedTemporaryFile(delete=False, suffix=f".{imgfile.name.split('.')[-1]}") as tf:
                         tf.write(imgfile.read())

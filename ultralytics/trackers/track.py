@@ -40,7 +40,8 @@ def on_predict_start(predictor: object, persist: bool = False) -> None:
         >>> on_predict_start(predictor, persist=True)
     """
     trackable = ("detect", "segment", "pose", "obb")  # tasks whose results carry boxes, in canonical order
-    if (task := predictor.args.task) in TASKS and task not in trackable:  # unknown third-party tasks are left alone
+    task = predictor.args.task
+    if task in TASKS and task not in trackable:  # unknown third-party tasks are left alone
         raise ValueError(f"❌ Task '{task}' doesn't support 'mode=track', valid tasks are {', '.join(trackable)}")
 
     if hasattr(predictor, "trackers") and persist:
@@ -116,7 +117,8 @@ def on_predict_postprocess_end(predictor: object, persist: bool = False) -> None
             tracker.reset()
             predictor.vid_path[i if is_stream else 0] = vid_path
 
-        det = (src := result.obb if is_obb else result.boxes).cpu().numpy()
+        src = result.obb if is_obb else result.boxes
+        det = src.cpu().numpy()
         kwargs = {"feats": getattr(result, "feats", None)}
         if dets_del_list is not None:
             kwargs["dets_del"] = dets_del_list[i]

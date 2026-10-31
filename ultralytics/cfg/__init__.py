@@ -651,7 +651,8 @@ def check_dict_alignment(
     # Allow 'augmentations' as a valid custom parameter for custom Albumentations transforms
     if allowed_custom_keys is None:
         allowed_custom_keys = {"augmentations", "save_dir"}
-    if mismatched := [k for k in custom_keys if k not in base_keys and k not in allowed_custom_keys]:
+    mismatched = [k for k in custom_keys if k not in base_keys and k not in allowed_custom_keys]
+    if mismatched:
         from difflib import get_close_matches
 
         string = ""
@@ -893,7 +894,8 @@ def handle_yolo_solutions(args: list[str]) -> None:
                 success, frame = cap.read()
                 if not success:
                     break
-                results = solution(frame, f_n := f_n + 1) if solution_name == "analytics" else solution(frame)
+                f_n = f_n + 1
+                results = solution(frame, f_n) if solution_name == "analytics" else solution(frame)
                 if solution_name != "crop":
                     vw.write(results.plot_im)
                 if solution.CFG["show"] and cv2.waitKey(1) & 0xFF == ord("q"):
@@ -977,7 +979,8 @@ def smart_value(v: str) -> Any:
             return ast.literal_eval(v)
         except Exception:
             name, _, attr = v.rpartition(".")
-            if (module := sys.modules.get(name)) and attr.isupper():
+            module = sys.modules.get(name)
+            if module and attr.isupper():
                 value = getattr(module, attr, None)
                 if isinstance(value, (int, float)):
                     return value

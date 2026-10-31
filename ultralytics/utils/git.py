@@ -69,7 +69,8 @@ class GitRepo:
     def _refdir(gitdir: Path | None) -> Path | None:
         """Resolve directory containing refs, objects, and config."""
         p = gitdir / "commondir" if gitdir else None
-        if s := GitRepo._read(p):
+        s = GitRepo._read(p)
+        if s:
             d = Path(s)
             return (gitdir / d).resolve() if not d.is_absolute() else d
         return gitdir
@@ -87,7 +88,8 @@ class GitRepo:
     def _ref_commit(self, ref: str) -> str | None:
         """Commit for ref (handles packed-refs)."""
         rf = self.refdir / ref
-        if s := self._read(rf):
+        s = self._read(rf)
+        if s:
             return s
         pf = self.refdir / "packed-refs"
         b = pf.read_bytes().splitlines() if pf.exists() else []

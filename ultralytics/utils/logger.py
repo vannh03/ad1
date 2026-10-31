@@ -154,7 +154,8 @@ class ConsoleLogger:
             lines.pop()
 
         for line in lines:
-            if not (line := line.rstrip()):
+            line = line.rstrip()
+            if not line:
                 continue  # a bare newline carries nothing once timestamped
 
             # General deduplication
@@ -305,7 +306,8 @@ class _DriveInfo:
         ):
             if getter:
                 try:
-                    if platform_mounts := getter(partitions):
+                    platform_mounts = getter(partitions)
+                    if platform_mounts:
                         return _DriveInfo._sort(platform_mounts)
                 except (json.JSONDecodeError, OSError, plistlib.InvalidFileException, subprocess.SubprocessError):
                     pass
